@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bank Data Table</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        header {
+            text-align: center;
+            padding: 15px;
+            background: #009879;
+            color: white;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        table, th, td {
+            border: 1px solid #aaa;
+            padding: 8px;
+        }
+        th {
+            background: #009879;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<header>Bank Data Table</header>
+
+<label><b>Select Branch:</b></label>
+<select id="branchSelect">
+    <option value="All">All</option>
+    {% for b in branches %}
+        <option value="{{ b[0] }}">{{ b[0] }}</option>
+    {% endfor %}
+</select>
+
+<button onclick="loadData()">Filter</button>
+<a href="/" class="button">Back to Dashboard</a>
+
+<table id="dataTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Bank</th>
+            <th>Branch</th>
+            <th>Customer</th>
+            <th>Account</th>
+            <th>Balance</th>
+            <th>Loan</th>
+            <th>Transaction</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+function loadData() {
+    const branch = document.getElementById("branchSelect").value;
+
+    fetch(`/filter_table?branch=${branch}`)
+        .then(res => res.json())
+        .then(data => {
+            const tbody = document.querySelector("#dataTable tbody");
+            tbody.innerHTML = "";
+
+            data.forEach(row => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${row.id}</td>
+                        <td>${row.bank_id}</td>
+                        <td>${row.branch_name}</td>
+                        <td>${row.customer_name}</td>
+                        <td>${row.account_type}</td>
+                        <td>${row.account_balance}</td>
+                        <td>${row.loan_amount}</td>
+                        <td>${row.amount}</td>
+                    </tr>`;
+            });
+        });
+}
+
+loadData();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bank Dashboard</title>
+
+    <!-- Google Font -->
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #eef2f7;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(90deg, #004aad, #0073ff);
+            padding: 22px;
+            text-align: center;
+            color: white;
+            font-size: 30px;
+            font-weight: 600;
+            box-shadow: 0px 3px 8px rgba(0,0,0,0.2);
+        }
+
+        /* FILTER SECTION */
+        .filter-box {
+            margin: 20px auto;
+            width: 90%;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0px 3px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        select, button {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #bbb;
+            font-size: 15px;
+            outline: none;
+        }
+
+        button {
+            background: #0073ff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background: #005ed1;
+        }
+
+        /* GRID */
+        .grid-container {
+            width: 90%;
+            margin: auto;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+            transition: 0.3s ease;
+        }
+
+        .card:hover {
+            transform: scale(1.02);
+            box-shadow: 0px 6px 18px rgba(0,0,0,0.2);
+        }
+
+        .card h3 {
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        canvas {
+            height: 260px !important;
+        }
+
+        .full {
+            grid-column: span 2;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">🏦 BANK DASHBOARD</div>
+
+<div class="filter-box">
+    <label><b>Select Branch:</b></label>
+    <select id="branchSelect">
+        <option value="" disabled selected>Select</option>
+        {% for b in branches %}
+        <option value="{{ b[0] }}">{{ b[0] }}</option>
+        {% endfor %}
+    </select>
+    <button onclick="applyFilter()">Apply Filter</button>
+</div>
+
+
+<!-- GRAPHS -->
+<div class="grid-container">
+
+    <div class="card">
+        <h3>Customer Count by Branch</h3>
+        <canvas id="chart1"></canvas>
+    </div>
+
+    <div class="card">
+        <h3>Loan Types</h3>
+        <canvas id="chart2"></canvas>
+    </div>
+
+    <div class="card">
+        <h3>Top Customers</h3>
+        <canvas id="chart3"></canvas>
+    </div>
+
+    <div class="card">
+        <h3>Monthly Loan Amount</h3>
+        <canvas id="chart4"></canvas>
+    </div>
+
+    <div class="card full">
+        <h3>Total Loan Amount by Branch</h3>
+        <canvas id="chart5"></canvas>
+    </div>
+
+</div>
+
+<script>
+let chart1, chart2, chart3, chart4, chart5;
+
+// gradient colors
+function gradient(ctx, color1, color2) {
+    let g = ctx.createLinearGradient(0, 0, 0, 300);
+    g.addColorStop(0, color1);
+    g.addColorStop(1, color2);
+    return g;
+}
+
+function renderCharts(data) {
+    const ctx1 = document.getElementById('chart1').getContext("2d");
+    const ctx2 = document.getElementById('chart2').getContext("2d");
+    const ctx3 = document.getElementById('chart3').getContext("2d");
+    const ctx4 = document.getElementById('chart4').getContext("2d");
+    const ctx5 = document.getElementById('chart5').getContext("2d");
+
+    if (chart1) chart1.destroy();
+    if (chart2) chart2.destroy();
+    if (chart3) chart3.destroy();
+    if (chart4) chart4.destroy();
+    if (chart5) chart5.destroy();
+
+    chart1 = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: data.branch_counts.map(x => x[0]),
+            datasets: [{
+                label: 'Customers',
+                backgroundColor: gradient(ctx1, "#00c6ff", "#0072ff"),
+                data: data.branch_counts.map(x => x[1])
+            }]
+        }
+    });
+
+    chart2 = new Chart(ctx2, {
+        type: 'pie',
+        data: {
+            labels: data.loan_counts.map(x => x[0]),
+            datasets: [{
+                backgroundColor: ["#007bff", "#28a745", "#ffc107", "#dc3545"],
+                data: data.loan_counts.map(x => x[1])
+            }]
+        }
+    });
+
+    chart3 = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: data.top_customers.map(x => x[0]),
+            datasets: [{
+                label: 'Loan Amount',
+                backgroundColor: gradient(ctx3, "#ff7eb3", "#ff65a3"),
+                data: data.top_customers.map(x => x[1])
+            }]
+        }
+    });
+
+    chart4 = new Chart(ctx4, {
+        type: 'line',
+        data: {
+            labels: data.monthly_loan.map(x => "Month " + x[0]),
+            datasets: [{
+                label: 'Loan Amount',
+                borderColor: "#007bff",
+                backgroundColor: gradient(ctx4, "#87CEFA", "#007bff"),
+                data: data.monthly_loan.map(x => x[1]),
+                fill: true
+            }]
+        }
+    });
+
+    chart5 = new Chart(ctx5, {
+        type: 'bar',
+        data: {
+            labels: data.loan_by_branch.map(x => x[0]),
+            datasets: [{
+                label: 'Total Loan',
+                backgroundColor: gradient(ctx5, "#84fab0", "#8fd3f4"),
+                data: data.loan_by_branch.map(x => x[1])
+            }]
+        }
+    });
+}
+
+function applyFilter() {
+    const branch = document.getElementById("branchSelect").value;
+
+    fetch(`/filter?branch=${branch}`)
+        .then(res => res.json())
+        .then(data => renderCharts(data))
+        .catch(err => console.log(err));
+}
+
+// LOAD DEFAULT DATA
+renderCharts({
+    branch_counts: {{ branch_counts | safe }},
+    loan_counts: {{ loan_counts | safe }},
+    top_customers: {{ top_customers | safe }},
+    monthly_loan: {{ monthly_loan | safe }},
+    loan_by_branch: {{ loan_by_branch | safe }}
+});
+</script>
+
+</body>
+</html>
